@@ -24,6 +24,6 @@ Install dependencies
 Running
 -------
 ```
-./multistream.py uri1 uri2 uri3 uri4
+./multiwindow.py uri1 uri2 uri3 uri4
 ```
 
