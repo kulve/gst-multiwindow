@@ -10,6 +10,7 @@ Licensed under Creative Commons Attribution-ShareAlike 3.0 Unported
 Install dependencies
 --------------------
 
+```
  sudo apt-get install python-gi python3-gi \
     gstreamer1.0-tools \
     gir1.2-gstreamer-1.0 \
@@ -18,10 +19,11 @@ Install dependencies
     gstreamer1.0-plugins-ugly \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-libav
+```
 
 Running
 -------
-
+```
 ./multistream.py uri1 uri2 uri3 uri4
-
+```
 
