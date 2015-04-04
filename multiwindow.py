@@ -74,6 +74,7 @@ class Player(object):
         
         # Set properties
         playbin.set_property('uri', mediauri)
+        playbin.set_property('video-sink', Gst.ElementFactory.make('xvimagesink', None))
 
         return pipeline
 
