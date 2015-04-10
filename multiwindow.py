@@ -47,19 +47,22 @@ class Player(object):
         self.hbox_down.pack_end(self.drawingarea_br, expand=True, fill=True, padding=0)
 
         # Create 2x2 GStreamer pipelines
-        self.pipeline_tl = self.new_pipeline(self.on_sync_message_tl, self.on_eos_tl, args.uris[0])
-        self.pipeline_tr = self.new_pipeline(self.on_sync_message_tr, self.on_eos_tr, args.uris[1])
-        self.pipeline_bl = self.new_pipeline(self.on_sync_message_bl, self.on_eos_bl, args.uris[2])
-        self.pipeline_br = self.new_pipeline(self.on_sync_message_br, self.on_eos_br, args.uris[3])
+        self.pipeline_tl = self.new_pipeline(self.on_sync_message_tl, args.uris[0])
+        self.pipeline_tr = self.new_pipeline(self.on_sync_message_tr, args.uris[1])
+        self.pipeline_bl = self.new_pipeline(self.on_sync_message_bl, args.uris[2])
+        self.pipeline_br = self.new_pipeline(self.on_sync_message_br, args.uris[3])
 
-    def new_pipeline(self, sync_msg_cb, eos_cb, mediauri):
+    def new_pipeline(self, sync_msg_cb, mediauri):
 
         pipeline = Gst.Pipeline()
+
+        if (not pipeline):
+            print ('Failed to create pipeline')
+            exit (-1)
 
         # Create bus to get events from GStreamer pipeline
         bus = pipeline.get_bus()
         bus.add_signal_watch()
-        bus.connect('message::eos', eos_cb)
         bus.connect('message::error', self.on_error)
 
         # This is needed to make the video output in our DrawingArea:
@@ -67,16 +70,31 @@ class Player(object):
         bus.connect('sync-message::element', sync_msg_cb)
 
         # Create GStreamer elements
-        playbin = Gst.ElementFactory.make('playbin', None)
+        decodebin = Gst.ElementFactory.make('uridecodebin', 'decodebin')
+        videosink = Gst.ElementFactory.make('nveglglessink', 'videosink')
 
-        # Add playbin to the pipeline
-        pipeline.add(playbin)
-        
+        if (not decodebin or not videosink):
+            print ('Failed to create uridecodebin and/or nveglglessink')
+            exit(-1)
+
         # Set properties
-        playbin.set_property('uri', mediauri)
-        playbin.set_property('video-sink', Gst.ElementFactory.make('xvimagesink', None))
+        decodebin.set_property('uri', mediauri)
+        videosink.set_property('create-window', False)
+
+        # Add elements to the pipeline
+        pipeline.add(decodebin)
+        pipeline.add(videosink)
+
+        decodebin.connect("pad-added", self.decodebin_pad_added)
 
         return pipeline
+
+    def decodebin_pad_added(self, dbin, pad):
+        pipeline = dbin.get_parent()
+        videosink = pipeline.get_by_name('videosink')
+        dbin.link(videosink)
+        pipeline.set_state(Gst.State.PLAYING)
+        print('Decodebin linked to videosink')
 
     def run(self):
         self.window.show_all()
@@ -88,11 +106,11 @@ class Player(object):
         self.xid_bl = self.drawingarea_bl.get_property('window').get_xid()
         self.xid_br = self.drawingarea_br.get_property('window').get_xid()
 
-        # Start all pipelines
-        self.pipeline_tl.set_state(Gst.State.PLAYING)
-        self.pipeline_tr.set_state(Gst.State.PLAYING)
-        self.pipeline_bl.set_state(Gst.State.PLAYING)
-        self.pipeline_br.set_state(Gst.State.PLAYING)
+        # Prepare all pipelines
+        self.pipeline_tl.set_state(Gst.State.PAUSED)
+        self.pipeline_tr.set_state(Gst.State.PAUSED)
+        self.pipeline_bl.set_state(Gst.State.PAUSED)
+        self.pipeline_br.set_state(Gst.State.PAUSED)
         Gtk.main()
 
     def quit(self, window):
@@ -118,25 +136,6 @@ class Player(object):
 
     def on_sync_message_br(self, bus, msg):
         self.set_xid(msg, self.xid_br)
-
-    def seek(pipeline):
-        pipeline.seek_simple(
-            Gst.Format.TIME,        
-            Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
-            0
-        )
-
-    def on_eos_tl(self, bus, msg):
-        self.seek(pipeline_tl)
-
-    def on_eos_tr(self, bus, msg):
-        self.seek(pipeline_tr)
-
-    def on_eos_bl(self, bus, msg):
-        self.seek(pipeline_bl)
-
-    def on_eos_br(self, bus, msg):
-        self.seek(pipeline_br)
 
     def on_error(self, bus, msg):
         print('on_error():', msg.parse_error())
