@@ -4,7 +4,6 @@ GStreamer multiwindow example
 The code is originally taken from:
 * https://wiki.ubuntu.com/Novacut/GStreamer1.0
 * http://bazaar.launchpad.net/~jderose/+junk/gst-examples/view/head:/video-player-1.0
-* https://github.com/kulve/gst-multiwindow
 
 Licensed under Creative Commons Attribution-ShareAlike 3.0 Unported
 
